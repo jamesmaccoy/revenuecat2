@@ -34,14 +34,41 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check subscription status for admin routes
-  const subscriptionCookie = request.cookies.get('rc-subscription')
-  if (pathname.startsWith('/admin') && !subscriptionCookie?.value) {
-    console.log('No subscription found, redirecting to subscribe')
-    return NextResponse.redirect(new URL('/subscribe', request.url))
+  if (pathname.startsWith('/admin')) {
+    try {
+      // Create a new request to our subscription check endpoint
+      const checkUrl = new URL('/api/check-subscription', request.url)
+      const checkResponse = await fetch(checkUrl, {
+        headers: {
+          cookie: request.headers.get('cookie') || '',
+        },
+      })
+
+      const { hasActiveSubscription, customerId } = await checkResponse.json()
+
+      if (!hasActiveSubscription) {
+        console.log('No active subscription found, redirecting to subscribe')
+        return NextResponse.redirect(new URL('/subscribe', request.url))
+      }
+
+      // If we have a customer ID but no cookie, set it
+      if (customerId && !request.cookies.get('rc-customer-id')) {
+        const response = NextResponse.redirect(new URL('/admin', request.url))
+        response.cookies.set('rc-customer-id', customerId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/'
+        })
+        return response
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error)
+      return NextResponse.redirect(new URL('/subscribe', request.url))
+    }
   }
 
   // If authenticated and path is protected (like /admin), allow access.
-  // The page itself will handle subscription checks.
   console.log('User authenticated, allowing access to protected path:', pathname)
   return NextResponse.next()
 }
