@@ -17,6 +17,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Check if path requires protection
+  const isProtectedPath = PROTECTED_PATHS.some((path) => pathname.startsWith(path))
+  if (!isProtectedPath) {
+    console.log('Non-protected path:', pathname)
+    return NextResponse.next()
+  }
+
   // Get auth cookie
   const authCookie = request.cookies.get('payload-token')
   console.log('Auth cookie present:', !!authCookie?.value)
@@ -26,34 +33,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Check if path requires protection
-  const isProtectedPath = PROTECTED_PATHS.some((path) => pathname.startsWith(path))
-
-  // Check if the page requires subscription
-  let requiresSubscription = false
-  if (!isProtectedPath) {
-    try {
-      const checkUrl = new URL('/api/check-page-access', request.url)
-      checkUrl.searchParams.set('slug', pathname.split('/').pop() || '')
-      const checkResponse = await fetch(checkUrl, {
-        headers: {
-          cookie: request.headers.get('cookie') || '',
-        },
-      })
-      const { requiresSubscription: pageRequiresSubscription } = await checkResponse.json()
-      requiresSubscription = pageRequiresSubscription
-    } catch (error) {
-      console.error('Error checking page access:', error)
-    }
-  }
-
-  if (!isProtectedPath && !requiresSubscription) {
-    console.log('Non-protected path:', pathname)
-    return NextResponse.next()
-  }
-
-  // Check subscription status for protected routes
-  if (isProtectedPath || requiresSubscription) {
+  // Check subscription status for admin routes
+  if (pathname.startsWith('/admin')) {
     try {
       // Create a new request to our subscription check endpoint
       const checkUrl = new URL('/api/check-subscription', request.url)
@@ -72,7 +53,7 @@ export async function middleware(request: NextRequest) {
 
       // If we have a customer ID but no cookie, set it
       if (customerId && !request.cookies.get('rc-customer-id')) {
-        const response = NextResponse.next()
+        const response = NextResponse.redirect(new URL('/admin', request.url))
         response.cookies.set('rc-customer-id', customerId, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -87,7 +68,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // If authenticated and path is protected, allow access
+  // If authenticated and path is protected (like /admin), allow access.
   console.log('User authenticated, allowing access to protected path:', pathname)
   return NextResponse.next()
 }

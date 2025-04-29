@@ -19,14 +19,13 @@ import {
   PreviewField,
 } from '@payloadcms/plugin-seo/fields'
 import { isAdmin } from '@/access/isAdmin'
-import { isAdminField } from '@/access/isAdminField'
 
 export const Pages: CollectionConfig<'pages'> = {
   slug: 'pages',
   access: {
     create: isAdmin,
     delete: isAdmin,
-    read: () => true,
+    read: isAdmin,
     update: isAdmin,
   },
   // This config controls what's populated by default when a page is referenced
@@ -62,15 +61,6 @@ export const Pages: CollectionConfig<'pages'> = {
       name: 'title',
       type: 'text',
       required: true,
-    },
-    {
-      name: 'requiresSubscription',
-      type: 'checkbox',
-      label: 'Requires Subscription',
-      defaultValue: false,
-      admin: {
-        position: 'sidebar',
-      },
     },
     {
       type: 'tabs',
