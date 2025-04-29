@@ -33,6 +33,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // Check subscription status for admin routes
+  const subscriptionCookie = request.cookies.get('rc-subscription')
+  if (pathname.startsWith('/admin') && !subscriptionCookie?.value) {
+    console.log('No subscription found, redirecting to subscribe')
+    return NextResponse.redirect(new URL('/subscribe', request.url))
+  }
+
   // If authenticated and path is protected (like /admin), allow access.
   // The page itself will handle subscription checks.
   console.log('User authenticated, allowing access to protected path:', pathname)
