@@ -14,9 +14,9 @@ export async function GET(request: NextRequest) {
     const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString())
     const userId = decodedPayload.id
 
-    // Initialize RevenueCat with the secret key
+    // Initialize RevenueCat with the Web Billing API key
     const purchases = Purchases.configure(
-      process.env.REVENUECAT_SECRET_API_KEY,
+      process.env.NEXT_PUBLIC_REVENUECAT_PUBLIC_SDK_KEY,
       userId
     )
 
