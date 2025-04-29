@@ -41,27 +41,36 @@ export default async function Bookings() {
     <>
       <PageClient />
       <div className="my-10 container space-y-10">
-        <div>
-          {upcomingBookings.docs.length > 0 && (
-            <h2 className="text-4xl font-medium tracking-tighter my-6">Upcoming stays</h2>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-            {formattedUpcomingBookings.map((booking) => (
-              <BookingCard key={booking.id} booking={booking} />
-            ))}
+        {upcomingBookings.docs.length === 0 && pastBookings.docs.length === 0 ? (
+          <div className="text-center py-10">
+            <h2 className="text-4xl font-medium tracking-tighter mb-4">No bookings</h2>
+            <p className="text-muted-foreground">You don't have any upcoming or past bookings.</p>
           </div>
-        </div>
+        ) : (
+          <>
+            <div>
+              {upcomingBookings.docs.length > 0 && (
+                <h2 className="text-4xl font-medium tracking-tighter my-6">Upcoming stays</h2>
+              )}
 
-        {pastBookings.docs.length > 0 && (
-          <h2 className="text-4xl font-medium tracking-tighter my-6">Past stays</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+                {formattedUpcomingBookings.map((booking) => (
+                  <BookingCard key={booking.id} booking={booking} />
+                ))}
+              </div>
+            </div>
+
+            {pastBookings.docs.length > 0 && (
+              <h2 className="text-4xl font-medium tracking-tighter my-6">Past stays</h2>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+              {formattedPastBookings.map((booking) => (
+                <BookingCard key={booking.id} booking={booking} />
+              ))}
+            </div>
+          </>
         )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-          {formattedPastBookings.map((booking) => (
-            <BookingCard key={booking.id} booking={booking} />
-          ))}
-        </div>
       </div>
     </>
   )
