@@ -8,6 +8,7 @@ import { CallToActionBlock } from '@/blocks/CallToAction/Component'
 import { ContentBlock } from '@/blocks/Content/Component'
 import { FormBlock } from '@/blocks/Form/Component'
 import { MediaBlock } from '@/blocks/MediaBlock/Component'
+import { BookingCalculator } from '@/blocks/BookingCalculator/Component'
 
 const blockComponents = {
   archive: ArchiveBlock,
@@ -15,6 +16,7 @@ const blockComponents = {
   cta: CallToActionBlock,
   formBlock: FormBlock,
   mediaBlock: MediaBlock,
+  bookingCalculator: BookingCalculator,
 }
 
 export const RenderBlocks: React.FC<{
