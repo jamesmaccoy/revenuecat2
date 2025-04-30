@@ -12,7 +12,7 @@ export type SubscriptionStatus = {
 }
 
 export const useSubscription = (entitlementId?: string): SubscriptionStatus => {
-  const { customerInfo, isLoading, error } = useRevenueCat()
+  const { customerInfo, isLoading: isRevenueCatLoading, error: revenueCatError } = useRevenueCat()
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({
     isSubscribed: false,
     entitlements: [],
@@ -22,47 +22,67 @@ export const useSubscription = (entitlementId?: string): SubscriptionStatus => {
   })
 
   useEffect(() => {
-    if (isLoading || !customerInfo) {
-      setSubscriptionStatus(prev => ({ ...prev, isLoading }))
-      return
-    }
+    const checkSubscription = async () => {
+      try {
+        // First check with RevenueCat client-side
+        if (customerInfo) {
+          const entitlements = customerInfo.entitlements || {}
+          const activeEntitlements = Object.keys(entitlements).filter(
+            key => entitlements[key]?.isActive
+          )
 
-    try {
-      // Extract entitlements from customer info
-      const entitlements = customerInfo.entitlements || {}
-      const activeEntitlements = Object.keys(entitlements).filter(
-        key => entitlements[key]?.isActive
-      )
+          const isSubscribed = entitlementId
+            ? activeEntitlements.includes(entitlementId)
+            : activeEntitlements.length > 0
 
-      // Check if the user has the specific entitlement or any entitlement
-      const isSubscribed = entitlementId
-        ? activeEntitlements.includes(entitlementId)
-        : activeEntitlements.length > 0
+          if (isSubscribed) {
+            setSubscriptionStatus({
+              isSubscribed: true,
+              entitlements: activeEntitlements,
+              expirationDate: entitlementId && entitlements[entitlementId]?.expirationDate
+                ? new Date(entitlements[entitlementId].expirationDate)
+                : activeEntitlements.length > 0 && entitlements[activeEntitlements[0]]?.expirationDate
+                  ? new Date(entitlements[activeEntitlements[0]].expirationDate)
+                  : null,
+              isLoading: false,
+              error: null,
+            })
+            return
+          }
+        }
 
-      // Get expiration date of the entitlement
-      let expirationDate: Date | null = null
-      if (entitlementId && entitlements[entitlementId]?.expirationDate) {
-        expirationDate = new Date(entitlements[entitlementId].expirationDate)
-      } else if (activeEntitlements.length > 0 && entitlements[activeEntitlements[0]]?.expirationDate) {
-        expirationDate = new Date(entitlements[activeEntitlements[0]].expirationDate)
+        // If not subscribed client-side, check with the API
+        const response = await fetch('/api/check-subscription', {
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to check subscription status')
+        }
+
+        const { hasActiveSubscription } = await response.json()
+
+        setSubscriptionStatus({
+          isSubscribed: hasActiveSubscription,
+          entitlements: [],
+          expirationDate: null,
+          isLoading: false,
+          error: null,
+        })
+      } catch (err) {
+        console.error('Error checking subscription status:', err)
+        setSubscriptionStatus(prev => ({
+          ...prev,
+          isLoading: false,
+          error: err instanceof Error ? err : new Error('Unknown error checking subscription status'),
+        }))
       }
-
-      setSubscriptionStatus({
-        isSubscribed,
-        entitlements: activeEntitlements,
-        expirationDate,
-        isLoading: false,
-        error: null,
-      })
-    } catch (err) {
-      console.error('Error checking subscription status:', err)
-      setSubscriptionStatus(prev => ({
-        ...prev,
-        isLoading: false,
-        error: err instanceof Error ? err : new Error('Unknown error checking subscription status'),
-      }))
     }
-  }, [customerInfo, isLoading, entitlementId, error])
+
+    if (!isRevenueCatLoading) {
+      checkSubscription()
+    }
+  }, [customerInfo, isRevenueCatLoading, entitlementId, revenueCatError])
 
   return subscriptionStatus
 } 
