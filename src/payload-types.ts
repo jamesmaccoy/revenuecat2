@@ -339,7 +339,6 @@ export interface Category {
 export interface Page {
   id: string;
   title: string;
-  requiresSubscription?: boolean | null;
   hero: {
     type: 'none' | 'highImpact' | 'mediumImpact' | 'lowImpact';
     richText?: {
@@ -939,7 +938,6 @@ export interface BookingsSelect<T extends boolean = true> {
  */
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
-  requiresSubscription?: T;
   hero?:
     | T
     | {

@@ -10,17 +10,14 @@ export default function PremiumContentPage() {
   const { currentUser } = useUserContext()
   const { isSubscribed, isLoading, error } = useSubscription()
 
-  // Redirect to login if not logged in
+  // Only redirect if we're certain about the subscription status
   React.useEffect(() => {
-    if (!currentUser && !isLoading) {
-      router.push('/login')
-    }
-  }, [currentUser, isLoading, router])
-
-  // Redirect to subscribe page if not subscribed
-  React.useEffect(() => {
-    if (currentUser && !isLoading && !isSubscribed && !error) {
-      router.push('/subscribe')
+    if (!isLoading && !error) {
+      if (!currentUser) {
+        router.push('/login')
+      } else if (!isSubscribed) {
+        router.push('/subscribe')
+      }
     }
   }, [currentUser, isSubscribed, isLoading, error, router])
 
@@ -43,7 +40,7 @@ export default function PremiumContentPage() {
   }
 
   if (!currentUser || !isSubscribed) {
-    return null // Will be redirected by the useEffect hooks
+    return null // Will be redirected by the useEffect hook
   }
 
   return (
