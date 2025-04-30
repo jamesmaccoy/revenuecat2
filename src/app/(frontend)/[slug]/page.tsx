@@ -14,6 +14,8 @@ import { RenderHero } from '@/heros/RenderHero'
 import { generateMeta } from '@/utilities/generateMeta'
 import PageClient from './page.client'
 import { LivePreviewListener } from '@/components/LivePreviewListener'
+import { redirect } from 'next/navigation'
+import { getMeUser } from '@/utilities/getMeUser'
 
 export async function generateStaticParams() {
   const payload = await getPayload({ config: configPromise })
@@ -48,6 +50,27 @@ export default async function Page({ params: paramsPromise }: Args) {
   const { isEnabled: draft } = await draftMode()
   const { slug = 'home' } = await paramsPromise
   const url = '/' + slug
+
+  // Skip subscription check for home page
+  if (slug !== 'home') {
+    const currentUser = await getMeUser()
+    if (!currentUser) {
+      redirect('/login')
+    }
+
+    // Check subscription status
+    const checkUrl = new URL('/api/check-subscription', process.env.NEXT_PUBLIC_SERVER_URL)
+    const checkResponse = await fetch(checkUrl, {
+      headers: {
+        cookie: `payload-token=${currentUser.token}`,
+      },
+    })
+
+    const { hasActiveSubscription } = await checkResponse.json()
+    if (!hasActiveSubscription) {
+      redirect('/subscribe')
+    }
+  }
 
   let page: PageType | null
 
