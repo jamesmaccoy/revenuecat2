@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSideURL } from './utilities/getURL'
 
-// Paths that require authentication
-const PROTECTED_PATHS = ['/admin']
+// Paths that require authentication and subscription
+const PROTECTED_PATHS = ['/admin', '/premium-content']
 
 // Paths that are always allowed
 const PUBLIC_PATHS = ['/login', '/subscribe', '/register']
@@ -33,8 +33,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Check subscription status for admin routes
-  if (pathname.startsWith('/admin')) {
+  // Check subscription status for protected routes
+  if (isProtectedPath) {
     try {
       // Create a new request to our subscription check endpoint
       const checkUrl = new URL('/api/check-subscription', request.url)
@@ -53,7 +53,7 @@ export async function middleware(request: NextRequest) {
 
       // If we have a customer ID but no cookie, set it
       if (customerId && !request.cookies.get('rc-customer-id')) {
-        const response = NextResponse.redirect(new URL('/admin', request.url))
+        const response = NextResponse.next()
         response.cookies.set('rc-customer-id', customerId, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -68,8 +68,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // If authenticated and path is protected (like /admin), allow access.
-  console.log('User authenticated, allowing access to protected path:', pathname)
+  // If authenticated and path is protected, allow access
+  console.log('User authenticated and subscribed, allowing access to protected path:', pathname)
   return NextResponse.next()
 }
 
