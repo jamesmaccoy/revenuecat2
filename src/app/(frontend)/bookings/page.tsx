@@ -6,6 +6,8 @@ import { getMeUser } from '@/utilities/getMeUser'
 import PageClient from './page.client'
 import BookingCard from '../../../components/Bookings/BookingCard'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 export default async function Bookings() {
   const currentUser = await getMeUser()
@@ -41,6 +43,14 @@ export default async function Bookings() {
     <>
       <PageClient />
       <div className="my-10 container space-y-10">
+        <div className="flex justify-end mb-6">
+          <Link href="/premium-content">
+            <Button variant="default">
+              View Premium Content
+            </Button>
+          </Link>
+        </div>
+
         {upcomingBookings.docs.length === 0 && pastBookings.docs.length === 0 ? (
           <div className="text-center py-10">
             <h2 className="text-4xl font-medium tracking-tighter mb-4">No bookings</h2>

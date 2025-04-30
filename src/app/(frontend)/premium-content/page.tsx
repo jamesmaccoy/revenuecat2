@@ -1,14 +1,26 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useUserContext } from '@/context/UserContext'
 import { useSubscription } from '@/hooks/useSubscription'
+import { useRevenueCat } from '@/providers/RevenueCat'
+import { Purchases, Package } from '@revenuecat/purchases-js'
+import { Button } from '@/components/ui/button'
 
 export default function PremiumContentPage() {
   const router = useRouter()
   const { currentUser } = useUserContext()
   const { isSubscribed, isLoading, error } = useSubscription()
+  const { isInitialized } = useRevenueCat()
+  const [offerings, setOfferings] = useState<Package[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (isInitialized) {
+      loadOfferings()
+    }
+  }, [isInitialized])
 
   // Only redirect if we're certain about the subscription status
   React.useEffect(() => {
@@ -21,7 +33,20 @@ export default function PremiumContentPage() {
     }
   }, [currentUser, isSubscribed, isLoading, error, router])
 
-  if (isLoading) {
+  const loadOfferings = async () => {
+    try {
+      const offerings = await Purchases.getSharedInstance().getOfferings()
+      if (offerings.current && offerings.current.availablePackages.length > 0) {
+        setOfferings(offerings.current.availablePackages)
+      }
+      setLoading(false)
+    } catch (err) {
+      console.error('Error loading offerings:', err)
+      setLoading(false)
+    }
+  }
+
+  if (isLoading || loading) {
     return (
       <div className="container py-12">
         <h1 className="text-3xl font-bold mb-6">Premium Content</h1>
@@ -39,8 +64,14 @@ export default function PremiumContentPage() {
     )
   }
 
+  // Don't return null here - wait for the useEffect to handle redirects
   if (!currentUser || !isSubscribed) {
-    return null // Will be redirected by the useEffect hook
+    return (
+      <div className="container py-12">
+        <h1 className="text-3xl font-bold mb-6">Premium Content</h1>
+        <p>Loading...</p>
+      </div>
+    )
   }
 
   return (
@@ -59,37 +90,25 @@ export default function PremiumContentPage() {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
-          <h3 className="text-xl font-semibold mb-3">Exclusive Feature 1</h3>
-          <p>
-            This is an exclusive feature that is only available to premium subscribers. It provides
-            additional value and benefits.
-          </p>
-        </div>
-        
-        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
-          <h3 className="text-xl font-semibold mb-3">Exclusive Feature 2</h3>
-          <p>
-            This is another exclusive feature that is only available to premium subscribers. It provides
-            additional value and benefits.
-          </p>
-        </div>
-        
-        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
-          <h3 className="text-xl font-semibold mb-3">Exclusive Feature 3</h3>
-          <p>
-            This is yet another exclusive feature that is only available to premium subscribers. It provides
-            additional value and benefits.
-          </p>
-        </div>
-        
-        <div className="bg-card p-6 rounded-lg shadow-sm border border-border">
-          <h3 className="text-xl font-semibold mb-3">Exclusive Feature 4</h3>
-          <p>
-            This is one more exclusive feature that is only available to premium subscribers. It provides
-            additional value and benefits.
-          </p>
-        </div>
+        {offerings.map((pkg) => {
+          const product = pkg.webBillingProduct
+          return (
+            <div key={pkg.identifier} className="bg-card p-6 rounded-lg shadow-sm border border-border">
+              <h3 className="text-xl font-semibold mb-3">{product.displayName}</h3>
+              <p className="mb-4">{product.description}</p>
+              <p className="text-lg font-bold mb-4">
+                {product.currentPrice.formattedPrice}
+              </p>
+              <Button
+                variant="default"
+                className="w-full"
+                onClick={() => router.push('/subscribe')}
+              >
+                Manage Subscription
+              </Button>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
