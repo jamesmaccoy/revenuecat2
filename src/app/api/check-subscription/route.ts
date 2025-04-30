@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get the user ID from the auth token
+    
     const token = authCookie.value
     const [header, payload, signature] = token.split('.')
     const decodedPayload = JSON.parse(Buffer.from(payload, 'base64').toString())
